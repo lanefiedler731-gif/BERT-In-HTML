@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BERT Studio</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e3e3e3;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #e3e3e3;
+        }
+
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #9aa0a6;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: #333;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 56px;
+            margin-right: 320px;
+            overflow: hidden;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .welcome-screen.hidden {
+            display: none;
+        }
+
+        .studio-title {
+            font-size: 48px;
+            font-weight: 400;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #ff6b35, #f7931e, #ffcc02);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .model-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #444;
+            background: transparent;
+            color: #e3e3e3;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #333;
+        }
+
+        .tab.active {
+            background: #2d2d2d;
+            border-color: #666;
+        }
+
+        .tab.active::before {
+            content: '• ';
+            color: #8ab4f8;
+        }
+
+        /* Model Cards */
+        .model-cards {
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .model-card {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+            border: 1px solid transparent;
+        }
+
+        .model-card:hover {
+            background: #2a2a2a;
+        }
+
+        .model-card.selected {
+            background: #2d2d2d;
+            border: 1px solid #444;
+        }
+
+        .model-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .model-icon.bert { background: linear-gradient(135deg, #ff6b35, #f7931e); }
+        .model-icon.distil { background: linear-gradient(135deg, #4285f4, #34a853); }
+        .model-icon.roberta { background: linear-gradient(135deg, #9c27b0, #673ab7); }
+
+        .model-info {
+            flex: 1;
+        }
+
+        .model-name {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .badge.new { background: #1e3a5f; color: #8ab4f8; }
+        .badge.fast { background: #1e3a2f; color: #81c995; }
+        .badge.large { background: #3a2f1e; color: #f9ab00; }
+
+        .model-desc {
+            font-size: 13px;
+            color: #9aa0a6;
+            line-height: 1.4;
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: #9aa0a6;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .code-inline {
+            background: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #81c995;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-container.active {
+            display: flex;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 16px 20px;
+            border-radius: 16px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #2d4a6d;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: #2d2d2d;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #9aa0a6;
+        }
+
+        .message-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .message-avatar.user {
+            background: #4285f4;
+        }
+
+        .message-avatar.bert {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+        }
+
+        .message-content {
+            font-size: 14px;
+        }
+
+        .assistant-text {
+            font-size: 15px;
+            color: #e3e3e3;
+        }
+
+        .original-text {
+            color: #9aa0a6;
+            font-style: italic;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #444;
+        }
+
+        .mask-result {
+            margin-bottom: 16px;
+        }
+
+        .mask-label {
+            font-size: 12px;
+            color: #8ab4f8;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .prediction-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .prediction-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+
+        .prediction-rank {
+            font-size: 11px;
+            color: #9aa0a6;
+            width: 18px;
+        }
+
+        .prediction-token {
+            font-weight: 500;
+            color: #81c995;
+            min-width: 80px;
+        }
+
+        .prediction-bar {
+            flex: 1;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .prediction-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            border-radius: 3px;
+        }
+
+        .prediction-score {
+            font-size: 12px;
+            color: #9aa0a6;
+            width: 50px;
+            text-align: right;
+        }
+
+        .filled-sentence {
+            margin-top: 12px;
+            padding: 12px;
+            background: #1e3a2f;
+            border-radius: 8px;
+            border-left: 3px solid #81c995;
+        }
+
+        .filled-label {
+            font-size: 11px;
+            color: #81c995;
+            margin-bottom: 4px;
+        }
+
+        .filled-text {
+            color: #e3e3e3;
+        }
+
+        .filled-text .filled-word {
+            color: #81c995;
+            font-weight: 600;
+        }
+
+        .continue-btn {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #3d3d3d;
+            border: 1px solid #555;
+            border-radius: 8px;
+            color: #8ab4f8;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .continue-btn:hover {
+            background: #4d4d4d;
+            border-color: #8ab4f8;
+        }
+
+        .continue-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading Message */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: #2d2d2d;
+            border-radius: 16px;
+            align-self: flex-start;
+            max-width: 300px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-top-color: #8ab4f8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: #9aa0a6;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            background: #1a1a1a;
+            border-top: 1px solid #333;
+        }
+
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .input-wrapper {
+            background: #2d2d2d;
+            border-radius: 24px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #444;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #8ab4f8;
+        }
+
+        .prompt-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #e3e3e3;
+            font-size: 15px;
+            outline: none;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+        }
+
+        .prompt-input::placeholder {
+            color: #9aa0a6;
+        }
+
+        .run-btn {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .run-btn:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        .run-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-tools {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tool-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #2d2d2d;
+            border-radius: 16px;
+            font-size: 13px;
+            color: #e3e3e3;
+            border: 1px solid #444;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tool-chip:hover {
+            background: #3d3d3d;
+        }
+
+        .tool-chip.active {
+            background: #1e3a5f;
+            border-color: #8ab4f8;
+        }
+
+        .new-chat-btn {
+            background: none;
+            border: 1px solid #444;
+            color: #e3e3e3;
+        }
+
+        .new-chat-btn:hover {
+            background: #333;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 320px;
+            height: 100vh;
+            background: #1f1f1f;
+            border-left: 1px solid #333;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            background: #1f1f1f;
+            z-index: 10;
+        }
+
+        .settings-title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .settings-section {
+            padding: 16px;
+            border-bottom: 1px solid #333;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #e3e3e3;
+        }
+
+        .section-desc {
+            font-size: 12px;
+            color: #9aa0a6;
+            line-height: 1.4;
+        }
+
+        .model-selector {
+            background: #2d2d2d;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .model-selector-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .model-selector-id {
+            font-size: 12px;
+            color: #9aa0a6;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: block;
+            color: #e3e3e3;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #e3e3e3;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #8ab4f8;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            background: #444;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #8ab4f8;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            width: 50px;
+            padding: 6px 8px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e3e3e3;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #e3e3e3;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #8ab4f8;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+        }
+
+        .toggle-sublabel {
+            font-size: 11px;
+            color: #9aa0a6;
+        }
+
+        .assistant-hint {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #9aa0a6;
+            display: none;
+        }
+
+        .assistant-hint.active {
+            display: block;
+        }
+
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: #444;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle.active {
+            background: #8ab4f8;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.2s;
+        }
+
+        .toggle.active::after {
+            left: 22px;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 12px 0;
+        }
+
+        .collapsible-content {
+            display: none;
+            padding-top: 12px;
+        }
+
+        .collapsible-content.open {
+            display: block;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.ready { background: #81c995; }
+        .status-dot.loading { background: #f9ab00; animation: pulse 1s infinite; }
+        .status-dot.error { background: #f28b82; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            </svg>
+            <span class="header-title">BERT Studio</span>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" onclick="startNewChat()" title="New Chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+            </button>
+            <button class="icon-btn" title="Settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            
+            <div class="welcome-screen" id="welcomeScreen">
+                <h1 class="studio-title">BERT Studio</h1>
+                
+                <div class="model-tabs">
+                    <button class="tab active">● Fill-Mask</button>
+                    <button class="tab">BERT Models</button>
+                </div>
+
+                <div class="model-cards">
+                    <div class="model-card selected" data-model="Xenova/bert-base-uncased" data-mask="[MASK]">
+                        <div class="model-icon bert">B</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                BERT Base Uncased
+                                <span class="badge new">Popular</span>
+                            </div>
+                            <div class="model-desc">The original BERT model with 110M parameters. Great balance of speed and accuracy for masked language modeling.</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="Xenova/bert-base-cased" data-mask="[MASK]">
+                        <div class="model-icon bert">B</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                BERT Base Cased
+                                <span class="badge fast">Case-Sensitive</span>
+                            </div>
+                            <div class="model-desc">Case-sensitive BERT model. Distinguishes between uppercase and lowercase for more precise predictions.</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="Xenova/distilbert-base-uncased" data-mask="[MASK]">
+                        <div class="model-icon distil">D</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                DistilBERT Base
+                                <span class="badge fast">Fast</span>
+                            </div>
+                            <div class="model-desc">Distilled version of BERT with 66M parameters. 60% faster while retaining 97% of BERT's performance.</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="Xenova/roberta-base" data-mask="<mask>">
+                        <div class="model-icon roberta">R</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                RoBERTa Base
+                                <span class="badge new">Optimized</span>
+                            </div>
+                            <div class="model-desc">Robustly optimized BERT approach. Uses &lt;mask&gt; token format instead of [MASK].</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="onnx-community/bert-large-cased-ONNX" data-mask="[MASK]">
+                        <div class="model-icon bert">B</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                BERT Large Cased
+                                <span class="badge large">336M</span>
+                            </div>
+                            <div class="model-desc">Case-sensitive large BERT. 24-layer, 1024-hidden, 16-heads. Best for tasks requiring case distinction.</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="onnx-community/xlm-roberta-large-ONNX" data-mask="<mask>">
+                        <div class="model-icon roberta">R</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                XLM-RoBERTa Large
+                                <span class="badge large">560M</span>
+                            </div>
+                            <div class="model-desc">Multilingual large RoBERTa trained on 100 languages. Uses &lt;mask&gt; token. Excellent for cross-lingual tasks.</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="Xenova/Bio_ClinicalBERT" data-mask="[MASK]">
+                        <div class="model-icon bert">B</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                Bio ClinicalBERT
+                                <span class="badge fast">Medical</span>
+                            </div>
+                            <div class="model-desc">BERT trained on clinical notes (MIMIC-III). Specialized for biomedical and clinical NLP tasks.</div>
+                        </div>
+                    </div>
+
+                    <div class="model-card" data-model="Xenova/bert-base-multilingual-cased" data-mask="[MASK]">
+                        <div class="model-icon bert">B</div>
+                        <div class="model-info">
+                            <div class="model-name">
+                                BERT Multilingual
+                                <span class="badge new">104 langs</span>
+                            </div>
+                            <div class="model-desc">BERT trained on 104 languages. Great for multilingual text understanding and cross-lingual transfer.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="help-text">
+                    Enter a sentence with <span class="code-inline">_</span> as mask tokens.<br>
+                    Example: "The capital of France is _." or "I want to _ a new _."
+                </p>
+            </div>
+
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-messages" id="chatMessages"></div>
+            </div>
+
+            
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea class="prompt-input" id="promptInput" placeholder="Enter text with _ as mask... e.g., 'Paris is the _ of France.'" rows="1"></textarea>
+                        <button class="run-btn" id="runBtn">
+                            <span>Run</span>
+                            <span style="opacity: 0.7; font-size: 12px">⌘↵</span>
+                        </button>
+                    </div>
+                    <div class="input-tools">
+                        <div class="tool-chip active" id="minimalModeChip">
+                            <span>⚡</span>
+                            <span>Minimal</span>
+                        </div>
+                        <div class="tool-chip" id="maskModeChip">
+                            <span>🎭</span>
+                            <span>Detailed</span>
+                        </div>
+                        <div class="tool-chip" id="assistantModeChip">
+                            <span>💬</span>
+                            <span>Assistant</span>
+                        </div>
+                        <div class="tool-chip" id="multiMaskChip">
+                            <span>🔢</span>
+                            <span>Masks: <span id="maskCount">0</span></span>
+                        </div>
+                        <div class="tool-chip new-chat-btn" onclick="startNewChat()">
+                            <span>✨</span>
+                            <span>New Chat</span>
+                        </div>
+                    </div>
+                    <div class="assistant-hint" id="assistantHint">
+                        Assistant mode format: prompt: your question, responce: 1-5 starter words + masks (max tokens).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="settings-panel">
+            <div class="settings-header">
+                <span class="settings-title">Run settings</span>
+            </div>
+
+            <div class="settings-section">
+                <div class="model-selector" id="selectedModelDisplay">
+                    <div class="model-selector-name">BERT Base Uncased</div>
+                    <div class="model-selector-id">Xenova/bert-base-uncased</div>
+                </div>
+                <div class="section-desc">Bidirectional Encoder Representations from Transformers for masked language modeling.</div>
+                <div class="status-indicator" id="statusIndicator">
+                    <div class="status-dot ready" id="statusDot"></div>
+                    <span id="statusText">Ready</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-title">Model</div>
+                <div class="form-group">
+                    <select class="form-select" id="modelSelect">
+                        <optgroup label="Base Models (Fast)">
+                            <option value="Xenova/bert-base-uncased">BERT Base Uncased (110M)</option>
+                            <option value="Xenova/bert-base-cased">BERT Base Cased (110M)</option>
+                            <option value="Xenova/distilbert-base-uncased">DistilBERT Base (66M) - Fastest</option>
+                            <option value="Xenova/roberta-base">RoBERTa Base (125M)</option>
+                        </optgroup>
+                        <optgroup label="Large Models (Powerful)">
+                            <option value="onnx-community/bert-large-cased-ONNX">BERT Large Cased (336M)</option>
+                            <option value="onnx-community/xlm-roberta-large-ONNX">XLM-RoBERTa Large (560M)</option>
+                        </optgroup>
+                        <optgroup label="Specialized">
+                            <option value="Xenova/Bio_ClinicalBERT">Bio ClinicalBERT - Medical</option>
+                            <option value="Xenova/bert-base-multilingual-cased">BERT Multilingual (104 langs)</option>
+                            <option value="Xenova/xlm-roberta-base">XLM-RoBERTa Base (Multilingual)</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-title">Top-K Predictions</div>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="topKSlider" min="1" max="20" value="5">
+                    <input type="text" class="slider-value" id="topKValue" value="5">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-title">Min Confidence</div>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="thresholdSlider" min="0" max="50" value="1">
+                    <input type="text" class="slider-value" id="thresholdValue" value="1%">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-title">Temperature</div>
+                <div class="section-desc">Higher = more random picks</div>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="temperatureSlider" min="0" max="100" value="0">
+                    <input type="text" class="slider-value" id="temperatureValue" value="0">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-title">Assistant Mode</div>
+                <div class="form-group">
+                    <label class="form-label" for="assistantPrefixInput">Response starter (1-5 words recommended)</label>
+                    <input type="text" class="form-input" id="assistantPrefixInput" placeholder="e.g., I think">
+                </div>
+                <div class="section-title">Max Tokens</div>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="assistantMaxTokensSlider" min="1" max="40" value="10">
+                    <input type="text" class="slider-value" id="assistantMaxTokensValue" value="10">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-title">Display Options</div>
+                
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Show confidence bars</div>
+                    </div>
+                    <div class="toggle active" id="showBarsToggle"></div>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Show percentages</div>
+                    </div>
+                    <div class="toggle active" id="showProbToggle"></div>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Show filled sentence</div>
+                    </div>
+                    <div class="toggle active" id="showFilledToggle"></div>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Iterate masks sequentially</div>
+                        <div class="toggle-sublabel">Fill each mask using previous predictions</div>
+                    </div>
+                    <div class="toggle active" id="iterateMasksToggle"></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="collapsible-header" onclick="toggleAdvanced()">
+                    <span class="section-title">Advanced settings</span>
+                    <span id="advancedArrow">▼</span>
+                </div>
+                <div class="collapsible-content" id="advancedContent">
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Lowercase input</div>
+                            <div class="toggle-sublabel">For uncased models</div>
+                        </div>
+                        <div class="toggle" id="lowercaseToggle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+
+        env.allowLocalModels = false;
+
+        let fillMaskPipeline = null;
+        let currentModel = 'Xenova/bert-base-uncased';
+        let currentMaskToken = '[MASK]';
+        let currentMode = 'minimal';
+        let isLoading = false;
+        let pipelineReady = false;
+
+        const settings = {
+            topK: 5,
+            threshold: 0.01,
+            temperature: 0,
+            showBars: true,
+            showProb: true,
+            showFilled: true,
+            iterateMasks: true,
+            lowercase: false,
+            assistantPrefix: '',
+            assistantMaxTokens: 10
+        };
+        
+        let lastStreamEl = null;
+        let lastFilledText = '';
+
+        const modelMaskTokens = {
+            'Xenova/bert-base-uncased': '[MASK]',
+            'Xenova/bert-base-cased': '[MASK]',
+            'Xenova/distilbert-base-uncased': '[MASK]',
+            'Xenova/roberta-base': '<mask>',
+            'onnx-community/bert-large-cased-ONNX': '[MASK]',
+            'onnx-community/xlm-roberta-large-ONNX': '<mask>',
+            'Xenova/Bio_ClinicalBERT': '[MASK]',
+            'Xenova/bert-base-multilingual-cased': '[MASK]',
+            'Xenova/xlm-roberta-base': '<mask>'
+        };
+
+        const modelNames = {
+            'Xenova/bert-base-uncased': 'BERT Base Uncased',
+            'Xenova/bert-base-cased': 'BERT Base Cased',
+            'Xenova/distilbert-base-uncased': 'DistilBERT Base',
+            'Xenova/roberta-base': 'RoBERTa Base',
+            'onnx-community/bert-large-cased-ONNX': 'BERT Large Cased',
+            'onnx-community/xlm-roberta-large-ONNX': 'XLM-RoBERTa Large',
+            'Xenova/Bio_ClinicalBERT': 'Bio ClinicalBERT',
+            'Xenova/bert-base-multilingual-cased': 'BERT Multilingual',
+            'Xenova/xlm-roberta-base': 'XLM-RoBERTa Base'
+        };
+
+        // DOM Elements
+        const promptInput = document.getElementById('promptInput');
+        const runBtn = document.getElementById('runBtn');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const chatContainer = document.getElementById('chatContainer');
+        const chatMessages = document.getElementById('chatMessages');
+        const modelSelect = document.getElementById('modelSelect');
+        const maskCountSpan = document.getElementById('maskCount');
+        const selectedModelDisplay = document.getElementById('selectedModelDisplay');
+        const minimalModeChip = document.getElementById('minimalModeChip');
+        const maskModeChip = document.getElementById('maskModeChip');
+        const assistantModeChip = document.getElementById('assistantModeChip');
+        const assistantHint = document.getElementById('assistantHint');
+        const assistantPrefixInput = document.getElementById('assistantPrefixInput');
+        const assistantMaxTokensSlider = document.getElementById('assistantMaxTokensSlider');
+        const assistantMaxTokensValue = document.getElementById('assistantMaxTokensValue');
+
+        function init() {
+            setupEventListeners();
+            updateAssistantMaxTokens(settings.assistantMaxTokens);
+            setMode('minimal');
+            updateMaskCount();
+        }
+
+        function setupEventListeners() {
+            minimalModeChip.addEventListener('click', () => setMode('minimal'));
+            maskModeChip.addEventListener('click', () => setMode('mask'));
+            assistantModeChip.addEventListener('click', () => setMode('assistant'));
+
+            // Model card selection
+            document.querySelectorAll('.model-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    currentModel = card.dataset.model;
+                    currentMaskToken = card.dataset.mask;
+                    modelSelect.value = currentModel;
+                    updateModelDisplay();
+                    fillMaskPipeline = null;
+                    pipelineReady = false;
+                    updateStatus('ready', 'Ready');
+                });
+            });
+
+            // Model select dropdown
+            modelSelect.addEventListener('change', (e) => {
+                currentModel = e.target.value;
+                currentMaskToken = modelMaskTokens[currentModel];
+                document.querySelectorAll('.model-card').forEach(c => {
+                    c.classList.toggle('selected', c.dataset.model === currentModel);
+                });
+                updateModelDisplay();
+                fillMaskPipeline = null;
+                pipelineReady = false;
+                updateStatus('ready', 'Ready');
+            });
+
+            // Input handling
+            promptInput.addEventListener('input', () => {
+                updateMaskCount();
+                autoResize();
+            });
+
+            promptInput.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    runInference();
+                }
+            });
+
+            runBtn.addEventListener('click', runInference);
+
+            // Sliders
+            setupSlider('topKSlider', 'topKValue', (v) => settings.topK = v);
+            setupSlider('thresholdSlider', 'thresholdValue', (v) => settings.threshold = v / 100, (v) => v + '%');
+            setupSlider('temperatureSlider', 'temperatureValue', (v) => settings.temperature = v / 100);
+            setupSlider('assistantMaxTokensSlider', 'assistantMaxTokensValue', (v) => updateAssistantMaxTokens(v));
+
+            // Toggles
+            setupToggle('showBarsToggle', (v) => settings.showBars = v);
+            setupToggle('showProbToggle', (v) => settings.showProb = v);
+            setupToggle('showFilledToggle', (v) => settings.showFilled = v);
+            setupToggle('iterateMasksToggle', (v) => settings.iterateMasks = v);
+            setupToggle('lowercaseToggle', (v) => settings.lowercase = v);
+
+            assistantPrefixInput.addEventListener('input', () => {
+                settings.assistantPrefix = assistantPrefixInput.value;
+            });
+
+            assistantMaxTokensValue.addEventListener('input', () => {
+                const raw = parseInt(assistantMaxTokensValue.value, 10);
+                if (Number.isNaN(raw)) return;
+                updateAssistantMaxTokens(raw);
+            });
+        }
+
+        function setupSlider(sliderId, valueId, callback, formatter = (v) => v) {
+            const slider = document.getElementById(sliderId);
+            const value = document.getElementById(valueId);
+            
+            slider.addEventListener('input', () => {
+                const v = parseInt(slider.value);
+                value.value = formatter(v);
+                callback(v);
+            });
+        }
+
+        function setupToggle(toggleId, callback) {
+            const toggle = document.getElementById(toggleId);
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('active');
+                callback(toggle.classList.contains('active'));
+            });
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            minimalModeChip.classList.toggle('active', mode === 'minimal');
+            maskModeChip.classList.toggle('active', mode === 'mask');
+            assistantModeChip.classList.toggle('active', mode === 'assistant');
+            assistantHint.classList.toggle('active', mode === 'assistant');
+            promptInput.placeholder = mode === 'assistant'
+                ? 'Ask BERT a question...'
+                : 'Enter text with _ as mask... e.g., \'Paris is the _ of France.\'';
+            updateMaskCount();
+        }
+
+        function updateAssistantMaxTokens(value) {
+            const min = parseInt(assistantMaxTokensSlider.min, 10);
+            const max = parseInt(assistantMaxTokensSlider.max, 10);
+            const clamped = Math.max(min, Math.min(max, value));
+            settings.assistantMaxTokens = clamped;
+            assistantMaxTokensSlider.value = clamped;
+            assistantMaxTokensValue.value = clamped;
+            if (currentMode === 'assistant') {
+                updateMaskCount();
+            }
+        }
+
+        function updateModelDisplay() {
+            selectedModelDisplay.innerHTML = `
+                <div class="model-selector-name">${modelNames[currentModel] || currentModel}</div>
+                <div class="model-selector-id">${currentModel}</div>
+            `;
+        }
+
+        function updateStatus(type, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            dot.className = 'status-dot ' + type;
+            statusText.textContent = text;
+        }
+
+        function updateMaskCount() {
+            const text = promptInput.value;
+            const masks = currentMode === 'assistant' ? settings.assistantMaxTokens : countMasks(text);
+            maskCountSpan.textContent = masks;
+            document.getElementById('multiMaskChip').classList.toggle('active', masks > 0);
+        }
+
+        function countMasks(text) {
+            const bertMasks = (text.match(/\[MASK\]/gi) || []).length;
+            const robertaMasks = (text.match(/<mask>/gi) || []).length;
+            const underscoreMasks = (text.match(/_/g) || []).length;
+            return bertMasks + robertaMasks + underscoreMasks;
+        }
+
+        function autoResize() {
+            promptInput.style.height = 'auto';
+            promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + 'px';
+        }
+
+        function addUserMessage(text) {
+            welcomeScreen.classList.add('hidden');
+            chatContainer.classList.add('active');
+
+            const msg = document.createElement('div');
+            msg.className = 'message user';
+            msg.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar user">U</div>
+                    <span>You</span>
+                </div>
+                <div class="message-content">${escapeHtml(text)}</div>
+            `;
+            chatMessages.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function addLoadingMessage() {
+            const msg = document.createElement('div');
+            msg.className = 'loading-message';
+            msg.id = 'loadingMessage';
+            msg.innerHTML = `
+                <div class="spinner"></div>
+                <span class="loading-text">Processing...</span>
+            `;
+            chatMessages.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function updateLoadingMessage(text) {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) {
+                loading.querySelector('.loading-text').textContent = text;
+            }
+        }
+
+        function removeLoadingMessage() {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) loading.remove();
+        }
+
+        function addAssistantMessage(results, originalText, filledSource, showSteps) {
+            removeLoadingMessage();
+
+            const msg = document.createElement('div');
+            msg.className = 'message assistant';
+
+            let html = `
+                <div class="message-header">
+                    <div class="message-avatar bert">B</div>
+                    <span>${modelNames[currentModel]}</span>
+                </div>
+                <div class="message-content">
+                    <div class="original-text">"${escapeHtml(originalText)}"</div>
+            `;
+
+            results.forEach((result, idx) => {
+                html += `
+                    <div class="mask-result">
+                        <div class="mask-label">Mask #${result.maskIndex} predictions:</div>
+                        <div class="prediction-list">
+                            ${result.predictions.map((pred, i) => `
+                                <div class="prediction-item">
+                                    <span class="prediction-rank">${i + 1}.</span>
+                                    <span class="prediction-token">${escapeHtml(pred.token_str.trim() || '[space]')}</span>
+                                    ${settings.showBars ? `
+                                        <div class="prediction-bar">
+                                            <div class="prediction-bar-fill" style="width: ${(pred.score * 100).toFixed(1)}%"></div>
+                                        </div>
+                                    ` : ''}
+                                    ${settings.showProb ? `<span class="prediction-score">${(pred.score * 100).toFixed(1)}%</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${showSteps && result.filledStepHtml ? `
+                            <div class="filled-sentence">
+                                <div class="filled-label">After mask #${result.maskIndex}:</div>
+                                <div class="filled-text">${result.filledStepHtml}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            if (settings.showFilled && results.length > 0) {
+                let filledText = filledSource;
+                const isRoberta = currentMaskToken === '<mask>';
+                
+                // Replace each mask one at a time with its corresponding prediction
+                results.forEach(result => {
+                    if (result.predictions.length > 0) {
+                        const topPred = result.predictions[0].token_str.trim();
+                        // Replace only the FIRST occurrence (no 'g' flag)
+                        if (isRoberta) {
+                            filledText = filledText.replace(/<mask>/i, `<span class="filled-word">${escapeHtml(topPred)}</span>`);
+                        } else {
+                            filledText = filledText.replace(/\[MASK\]/i, `<span class="filled-word">${escapeHtml(topPred)}</span>`);
+                        }
+                    }
+                });
+
+                html += `
+                    <div class="filled-sentence">
+                        <div class="filled-label">Filled sentence (top predictions):</div>
+                        <div class="filled-text">${filledText}</div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            msg.innerHTML = html;
+            chatMessages.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function addErrorMessage(error) {
+            removeLoadingMessage();
+
+            const msg = document.createElement('div');
+            msg.className = 'message assistant';
+            msg.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar bert">B</div>
+                    <span>BERT Studio</span>
+                </div>
+                <div class="message-content" style="color: #f28b82;">
+                    ⚠️ ${escapeHtml(error)}
+                </div>
+            `;
+            chatMessages.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function extractResponseText(text) {
+            const marker = 'responce:';
+            const idx = text.toLowerCase().indexOf(marker);
+            if (idx === -1) return text.trim();
+            return text.slice(idx + marker.length).trim();
+        }
+
+        function stripMaskTokens(text, maskToken) {
+            const maskRegex = maskToken === '<mask>' ? /<mask>/g : /\[MASK\]/g;
+            return text.replace(maskRegex, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function nextFrame() {
+            return new Promise(resolve => requestAnimationFrame(() => resolve()));
+        }
+
+        function isWordLikeToken(token) {
+            return /[A-Za-z0-9]/.test(token);
+        }
+        
+        function isPunctuation(token) {
+            return /^[.,!?;:'"()\[\]{}\-–—…]+$/.test(token.trim());
+        }
+
+        function replaceFirstMask(text, maskToken, replacement) {
+            if (maskToken === '<mask>') {
+                return text.replace('<mask>', replacement);
+            }
+            return text.replace('[MASK]', replacement);
+        }
+
+        function renderFilledStep(text, maskToken, replacement) {
+            const escapedText = escapeHtml(text);
+            const escapedMask = escapeHtml(maskToken);
+            const escapedReplacement = escapeHtml(replacement);
+            return escapedText.replace(escapedMask, `<span class="filled-word">${escapedReplacement}</span>`);
+        }
+
+        function createAssistantStreamMessage() {
+            const msg = document.createElement('div');
+            msg.className = 'message assistant';
+            msg.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar bert">B</div>
+                    <span>${modelNames[currentModel]}</span>
+                </div>
+                <div class="message-content">
+                    <div class="assistant-text"></div>
+                    <button class="continue-btn" style="display:none;">Continue →</button>
+                </div>
+            `;
+            chatMessages.appendChild(msg);
+            scrollToBottom();
+            const continueBtn = msg.querySelector('.continue-btn');
+            continueBtn.addEventListener('click', () => continueResponse());
+            return {
+                textEl: msg.querySelector('.assistant-text'),
+                continueBtn: continueBtn,
+                msg: msg
+            };
+        }
+
+        function updateAssistantStream(textEl, responseText) {
+            textEl.innerHTML = escapeHtml(responseText);
+            scrollToBottom();
+        }
+
+        function selectPredictions(rawResults) {
+            // Filter out punctuation-only tokens
+            const noPunct = rawResults.filter(r => !isPunctuation(r.token_str));
+            const base = noPunct.length ? noPunct : rawResults;
+            
+            const thresholded = base.filter(r => r.score >= settings.threshold);
+            let candidates = thresholded.length ? thresholded : base;
+
+            let wordy = candidates.filter(r => isWordLikeToken(r.token_str));
+            if (!wordy.length) {
+                const rawWordy = base.filter(r => isWordLikeToken(r.token_str));
+                if (rawWordy.length) {
+                    wordy = rawWordy;
+                }
+            }
+
+            let finalCandidates = wordy.length ? wordy : candidates;
+            
+            // Apply temperature: shuffle based on temperature value
+            if (settings.temperature > 0 && finalCandidates.length > 1) {
+                finalCandidates = applyTemperature(finalCandidates, settings.temperature);
+            }
+            
+            return finalCandidates.slice(0, settings.topK);
+        }
+        
+        function applyTemperature(candidates, temp) {
+            // Temperature sampling: higher temp = more random
+            // Reweight scores with temperature and sample
+            const scores = candidates.map(c => c.score);
+            const tempScores = scores.map(s => Math.pow(s, 1 / (temp + 0.1)));
+            const sum = tempScores.reduce((a, b) => a + b, 0);
+            const probs = tempScores.map(s => s / sum);
+            
+            // Weighted shuffle based on probabilities
+            const result = [];
+            const remaining = [...candidates];
+            const remainingProbs = [...probs];
+            
+            while (remaining.length > 0) {
+                const rand = Math.random();
+                let cumulative = 0;
+                let picked = 0;
+                for (let i = 0; i < remainingProbs.length; i++) {
+                    cumulative += remainingProbs[i];
+                    if (rand <= cumulative) {
+                        picked = i;
+                        break;
+                    }
+                }
+                result.push(remaining[picked]);
+                remaining.splice(picked, 1);
+                remainingProbs.splice(picked, 1);
+                // Renormalize
+                const newSum = remainingProbs.reduce((a, b) => a + b, 0);
+                if (newSum > 0) {
+                    for (let i = 0; i < remainingProbs.length; i++) {
+                        remainingProbs[i] /= newSum;
+                    }
+                }
+            }
+            return result;
+        }
+
+        async function runInference() {
+            if (isLoading) return;
+            
+            let text = promptInput.value.trim();
+            if (!text) return;
+
+            const originalInput = text;
+            let displayInput = originalInput;
+            
+            // Normalize mask tokens to the model's expected format
+            const targetMask = modelMaskTokens[currentModel];
+
+            const isAssistantMode = currentMode === 'assistant';
+            if (isAssistantMode) {
+                const starter = assistantPrefixInput.value.trim();
+                const maxTokens = settings.assistantMaxTokens;
+                const starterWords = starter.split(/\s+/).filter(Boolean).length;
+
+                if (starterWords < 1) {
+                    addUserMessage(originalInput);
+                    addErrorMessage('Assistant mode needs at least 1 starter word.');
+                    return;
+                }
+
+                if (maxTokens < 1) {
+                    addUserMessage(originalInput);
+                    addErrorMessage('Assistant mode needs max tokens of at least 1.');
+                    return;
+                }
+
+                const maskSequence = Array(maxTokens).fill(targetMask).join(' ');
+                const starterPrefix = starter ? `${starter} ` : '';
+                text = `prompt: ${originalInput}\nresponce: ${starterPrefix}${maskSequence}`;
+                displayInput = text;
+            }
+            
+            // First, normalize all mask variants to a placeholder
+            // Support: [MASK], <mask>, and _ as universal mask
+            text = text.replace(/\[MASK\]/gi, '{{MASK}}');
+            text = text.replace(/<mask>/gi, '{{MASK}}');
+            // Add spaces between consecutive underscores, then replace each with mask
+            text = text.replace(/_+/g, match => match.split('').join(' '));
+            text = text.replace(/_/g, '{{MASK}}');
+            
+            // Apply lowercase if needed (before restoring masks)
+            if (settings.lowercase && !currentModel.includes('cased')) {
+                text = text.toLowerCase();
+            }
+            
+            // Now replace placeholder with the correct mask token for this model
+            text = text.replace(/\{\{MASK\}\}/gi, targetMask);
+
+            const maskCount = (text.match(targetMask === '<mask>' ? /<mask>/g : /\[MASK\]/g) || []).length;
+            const shouldIterate = settings.iterateMasks || maskCount > 1;
+            
+            if (maskCount === 0) {
+                addUserMessage(isAssistantMode ? originalInput : displayInput);
+                addErrorMessage(`No mask tokens found. Use _ as a mask in your text.`);
+                return;
+            }
+
+            isLoading = true;
+            runBtn.disabled = true;
+            
+            addUserMessage(isAssistantMode ? originalInput : displayInput);
+            promptInput.value = '';
+            updateMaskCount();
+            autoResize();
+            
+            addLoadingMessage();
+
+            try {
+                if (!fillMaskPipeline) {
+                    updateLoadingMessage(`Loading ${modelNames[currentModel]}...`);
+                    updateStatus('loading', 'Loading model...');
+                    
+                    fillMaskPipeline = await pipeline('fill-mask', currentModel);
+                    pipelineReady = true;
+                    updateStatus('ready', 'Model loaded');
+                }
+
+                const isMinimalMode = currentMode === 'minimal';
+                const isStreamingMode = isAssistantMode || isMinimalMode;
+                
+                let streamEl = null;
+                if (isStreamingMode) {
+                    removeLoadingMessage();
+                    streamEl = createAssistantStreamMessage();
+                    if (isAssistantMode) {
+                        const initialResponse = stripMaskTokens(extractResponseText(text), targetMask);
+                        updateAssistantStream(streamEl.textEl, initialResponse);
+                    } else {
+                        // Minimal mode: show original text with masks
+                        updateAssistantStream(streamEl.textEl, stripMaskTokens(text, targetMask));
+                    }
+                } else {
+                    updateLoadingMessage('Running inference...');
+                }
+
+                const allResults = [];
+                let currentText = text;
+
+                for (let i = 0; i < maskCount; i++) {
+                    if (!isStreamingMode) {
+                        updateLoadingMessage(`Processing mask ${i + 1} of ${maskCount}...`);
+                    }
+                    
+                    let results;
+                    try {
+                        const requestTopK = Math.max(settings.topK, 20);
+                        results = await fillMaskPipeline(currentText, { top_k: requestTopK });
+                    } catch (e) {
+                        console.error('Pipeline error:', e);
+                        throw new Error(`Model inference failed: ${e.message}`);
+                    }
+
+                    // Ensure results is an array
+                    if (!Array.isArray(results)) {
+                        results = [results];
+                    }
+
+                    const filtered = selectPredictions(results);
+
+                    let stepText = currentText;
+                    let stepFilledHtml = null;
+                    if (filtered.length > 0) {
+                        const topToken = filtered[0].token_str;
+                        stepText = replaceFirstMask(currentText, targetMask, topToken);
+                        stepFilledHtml = renderFilledStep(currentText, targetMask, topToken);
+                    }
+                    
+                    if (!isStreamingMode) {
+                        allResults.push({
+                            maskIndex: i + 1,
+                            originalText: currentText,
+                            predictions: filtered,
+                            filledStepText: stepText,
+                            filledStepHtml: stepFilledHtml
+                        });
+                    }
+
+                    // For iterative mask filling, replace only the FIRST mask with top prediction
+                    if (shouldIterate && filtered.length > 0) {
+                        currentText = stepText;
+                    }
+
+                    if (isStreamingMode && streamEl) {
+                        const responseText = isAssistantMode 
+                            ? stripMaskTokens(extractResponseText(currentText), targetMask)
+                            : stripMaskTokens(currentText, targetMask);
+                        updateAssistantStream(streamEl.textEl, responseText);
+                        await nextFrame();
+                    }
+                }
+
+                if (!isStreamingMode) {
+                    addAssistantMessage(allResults, displayInput, text, shouldIterate);
+                } else if (streamEl && (currentMode === 'minimal')) {
+                    // Show continue button and save state for minimal mode
+                    streamEl.continueBtn.style.display = 'inline-block';
+                    lastStreamEl = streamEl;
+                    lastFilledText = currentText;
+                }
+                updateStatus('ready', 'Ready');
+
+            } catch (error) {
+                console.error('Inference error:', error);
+                addErrorMessage(error.message);
+                updateStatus('error', 'Error');
+            } finally {
+                isLoading = false;
+                runBtn.disabled = false;
+            }
+        }
+        
+        async function continueResponse() {
+            if (isLoading || !lastStreamEl || !lastFilledText) return;
+            
+            const targetMask = modelMaskTokens[currentModel];
+            const numNewMasks = 5; // Add 5 more masks
+            const maskSequence = ' ' + Array(numNewMasks).fill(targetMask).join(' ');
+            
+            let currentText = lastFilledText + maskSequence;
+            
+            isLoading = true;
+            lastStreamEl.continueBtn.disabled = true;
+            lastStreamEl.continueBtn.textContent = 'Continuing...';
+            
+            try {
+                if (!fillMaskPipeline) {
+                    fillMaskPipeline = await pipeline('fill-mask', currentModel);
+                }
+                
+                for (let i = 0; i < numNewMasks; i++) {
+                    let results;
+                    try {
+                        const requestTopK = Math.max(settings.topK, 20);
+                        results = await fillMaskPipeline(currentText, { top_k: requestTopK });
+                    } catch (e) {
+                        console.error('Pipeline error:', e);
+                        throw new Error(`Model inference failed: ${e.message}`);
+                    }
+
+                    if (!Array.isArray(results)) {
+                        results = [results];
+                    }
+
+                    const filtered = selectPredictions(results);
+                    
+                    if (filtered.length > 0) {
+                        const topToken = filtered[0].token_str;
+                        currentText = replaceFirstMask(currentText, targetMask, topToken);
+                    }
+                    
+                    const responseText = stripMaskTokens(currentText, targetMask);
+                    updateAssistantStream(lastStreamEl.textEl, responseText);
+                    await nextFrame();
+                }
+                
+                lastFilledText = currentText;
+                lastStreamEl.continueBtn.textContent = 'Continue →';
+                lastStreamEl.continueBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('Continue error:', error);
+                lastStreamEl.continueBtn.textContent = 'Error - Retry →';
+                lastStreamEl.continueBtn.disabled = false;
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        window.startNewChat = function() {
+            chatMessages.innerHTML = '';
+            chatContainer.classList.remove('active');
+            welcomeScreen.classList.remove('hidden');
+            promptInput.value = '';
+            updateMaskCount();
+            lastStreamEl = null;
+            lastFilledText = '';
+        };
+
+        window.toggleAdvanced = function() {
+            const content = document.getElementById('advancedContent');
+            const arrow = document.getElementById('advancedArrow');
+            content.classList.toggle('open');
+            arrow.textContent = content.classList.contains('open') ? '▲' : '▼';
+        };
+
+        init();
+    </script>
+</body>
+</html>
