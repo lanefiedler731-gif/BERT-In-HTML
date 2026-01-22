@@ -12,11 +12,16 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --header-height: 56px;
+            --settings-width: 320px;
+        }
+
         body {
             font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;
             background-color: #1a1a1a;
             color: #e3e3e3;
-            height: 100vh;
+            min-height: 100vh;
             overflow: hidden;
         }
 
@@ -36,6 +41,7 @@
             top: 0;
             left: 0;
             right: 0;
+            height: var(--header-height);
             z-index: 100;
         }
 
@@ -86,9 +92,10 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            margin-top: 56px;
-            margin-right: 320px;
-            overflow: hidden;
+            margin-top: var(--header-height);
+            margin-right: var(--settings-width);
+            overflow-y: auto;
+            min-height: 0;
         }
 
         /* Welcome Screen */
@@ -97,8 +104,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             padding: 40px;
+            min-height: 0;
+            overflow: hidden;
+            gap: 8px;
         }
 
         .welcome-screen.hidden {
@@ -106,7 +116,7 @@
         }
 
         .studio-title {
-            font-size: 48px;
+            font-size: clamp(32px, 6vw, 48px);
             font-weight: 400;
             margin-bottom: 30px;
             background: linear-gradient(135deg, #ff6b35, #f7931e, #ffcc02);
@@ -150,6 +160,9 @@
         .model-cards {
             width: 100%;
             max-width: 700px;
+            max-height: 45vh;
+            overflow-y: auto;
+            padding-right: 6px;
         }
 
         .model-card {
@@ -223,7 +236,7 @@
             font-size: 13px;
             color: #9aa0a6;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 16px;
         }
 
         .code-inline {
@@ -240,6 +253,7 @@
             display: none;
             flex-direction: column;
             overflow: hidden;
+            min-height: 0;
         }
 
         .chat-container.active {
@@ -458,11 +472,15 @@
             padding: 20px;
             background: #1a1a1a;
             border-top: 1px solid #333;
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
         }
 
         .input-container {
             max-width: 800px;
             margin: 0 auto;
+            width: 100%;
         }
 
         .input-wrapper {
@@ -564,7 +582,7 @@
             position: fixed;
             top: 0;
             right: 0;
-            width: 320px;
+            width: var(--settings-width);
             height: 100vh;
             background: #1f1f1f;
             border-left: 1px solid #333;
@@ -806,6 +824,97 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        @media (max-width: 1200px) {
+            :root {
+                --settings-width: 280px;
+            }
+
+            .chat-messages {
+                padding: 16px;
+            }
+
+            .model-cards {
+                max-height: 40vh;
+            }
+        }
+
+        @media (max-width: 960px) {
+            :root {
+                --settings-width: 0px;
+            }
+
+            body {
+                overflow: auto;
+            }
+
+            .container {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .main-content {
+                margin-right: 0;
+            }
+
+            .settings-panel {
+                position: relative;
+                width: 100%;
+                height: auto;
+                border-left: none;
+                border-top: 1px solid #333;
+            }
+
+            .welcome-screen {
+                padding: 24px 18px 28px;
+            }
+
+            .model-cards {
+                max-width: 100%;
+                max-height: 38vh;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                padding: 10px 14px;
+            }
+
+            .header-right {
+                gap: 8px;
+            }
+
+            .message {
+                max-width: 100%;
+            }
+
+            .input-area {
+                padding: 16px;
+            }
+
+            .input-wrapper {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .run-btn {
+                justify-content: center;
+            }
+
+            .model-tabs {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .model-card {
+                padding: 12px 14px;
+            }
+
+            .model-desc {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -832,7 +941,7 @@
 
     <div class="container">
         <div class="main-content">
-            
+            <!-- Welcome Screen -->
             <div class="welcome-screen" id="welcomeScreen">
                 <h1 class="studio-title">BERT Studio</h1>
                 
@@ -937,12 +1046,12 @@
                 </p>
             </div>
 
-            
+            <!-- Chat Interface -->
             <div class="chat-container" id="chatContainer">
                 <div class="chat-messages" id="chatMessages"></div>
             </div>
 
-            
+            <!-- Input Area -->
             <div class="input-area">
                 <div class="input-container">
                     <div class="input-wrapper">
@@ -981,7 +1090,7 @@
             </div>
         </div>
 
-        
+        <!-- Settings Panel -->
         <div class="settings-panel">
             <div class="settings-header">
                 <span class="settings-title">Run settings</span>
